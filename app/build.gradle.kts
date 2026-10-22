@@ -6,12 +6,12 @@ plugins {
 
 android {
     namespace = "com.oldspell.app"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.oldspell.app"
         minSdk = 26
-        targetSdk = 35
+        targetSdk = 36
         // Google Play needs a higher number for every upload; CI uses its run number.
         versionCode = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 1
         versionName = "1.0.${System.getenv("GITHUB_RUN_NUMBER") ?: "0"}"
