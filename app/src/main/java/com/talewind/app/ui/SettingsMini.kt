@@ -1,4 +1,4 @@
-package com.earmark.app.ui
+package com.talewind.app.ui
 
 import android.content.Intent
 import android.net.Uri
@@ -32,6 +32,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -40,10 +44,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.earmark.app.EarmarkApp
-import com.earmark.app.data.Book
-import com.earmark.app.playback.PlaybackState
-import com.earmark.app.playback.PlayerConnection
+import com.talewind.app.TalewindApp
+import com.talewind.app.data.Book
+import com.talewind.app.playback.PlaybackState
+import com.talewind.app.playback.PlayerConnection
 
 // ---------------------------------------------------------------- Mini player
 
@@ -52,7 +56,7 @@ fun MiniPlayer(book: Book, state: PlaybackState, conn: PlayerConnection, onOpen:
     val active = state.bookId == book.id
     val pos = if (active) state.positionMs else book.positionMs
     val isPlaying = active && state.isPlaying
-    val skipBack by EarmarkApp.instance.settings.skipBackSec.collectAsStateWithLifecycle()
+    val skipBack by TalewindApp.instance.settings.skipBackSec.collectAsStateWithLifecycle()
     val chapter = book.chapters.getOrNull(book.chapterIndexAt(pos))
     val chProgress = if (chapter != null && chapter.durationMs > 0) {
         ((pos - chapter.startMs).toFloat() / chapter.durationMs).coerceIn(0f, 1f)
@@ -97,7 +101,7 @@ fun MiniPlayer(book: Book, state: PlaybackState, conn: PlayerConnection, onOpen:
 
 @Composable
 fun SettingsScreen(onAddFolder: () -> Unit) {
-    val app = EarmarkApp.instance
+    val app = TalewindApp.instance
     val context = LocalContext.current
     val folders by app.settings.folders.collectAsStateWithLifecycle()
     val hidden by app.settings.hidden.collectAsStateWithLifecycle()
@@ -105,6 +109,11 @@ fun SettingsScreen(onAddFolder: () -> Unit) {
     val skipFwd by app.settings.skipForwardSec.collectAsStateWithLifecycle()
     val scanStatus by app.store.scanStatus.collectAsStateWithLifecycle()
     val books by app.store.books.collectAsStateWithLifecycle()
+    var showLicenses by rememberSaveable { mutableStateOf(false) }
+    if (showLicenses) {
+        LicensesScreen(onBack = { showLicenses = false })
+        return
+    }
 
     LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 24.dp)) {
         item {
@@ -191,6 +200,36 @@ fun SettingsScreen(onAddFolder: () -> Unit) {
                     "• Folders split into “CD 1”, “Disc 2”… are joined into one book.\n" +
                     "• Cover art comes from the file, or a cover.jpg / folder.jpg next to it.",
                 style = MaterialTheme.typography.bodyMedium, color = Palette.Muted,
+                modifier = Modifier.padding(horizontal = 20.dp),
+            )
+        }
+
+        item { SectionHeader("About", Modifier.padding(top = 16.dp)) }
+        item {
+            val version: String = remember {
+                val name: String? = try {
+                    context.packageManager.getPackageInfo(context.packageName, 0).versionName
+                } catch (_: Exception) {
+                    null
+                }
+                name ?: ""
+            }
+            Text(
+                "Talewind $version",
+                style = MaterialTheme.typography.bodyMedium, color = Palette.Muted,
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
+            )
+            Text(
+                "Open-source licenses",
+                color = Palette.Accent,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { showLicenses = true }
+                    .padding(horizontal = 20.dp, vertical = 12.dp),
+            )
+            Text(
+                "Privacy: Talewind collects no data. Your books and listening progress stay on this phone.",
+                style = MaterialTheme.typography.bodySmall, color = Palette.Muted,
                 modifier = Modifier.padding(horizontal = 20.dp),
             )
         }

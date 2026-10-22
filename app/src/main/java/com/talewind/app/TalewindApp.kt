@@ -1,10 +1,10 @@
-package com.earmark.app
+package com.talewind.app
 
 import android.app.Application
-import com.earmark.app.data.LibraryStore
-import com.earmark.app.data.Settings
+import com.talewind.app.data.LibraryStore
+import com.talewind.app.data.Settings
 
-class EarmarkApp : Application() {
+class TalewindApp : Application() {
     lateinit var settings: Settings
         private set
     lateinit var store: LibraryStore
@@ -20,7 +20,7 @@ class EarmarkApp : Application() {
     fun rescan() = store.scan(settings.folders.value, settings.hidden.value)
 
     companion object {
-        lateinit var instance: EarmarkApp
+        lateinit var instance: TalewindApp
             private set
     }
 }

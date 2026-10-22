@@ -1,4 +1,4 @@
-package com.earmark.app.ui
+package com.talewind.app.ui
 
 import android.widget.Toast
 import androidx.compose.foundation.background
@@ -81,12 +81,12 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.earmark.app.EarmarkApp
-import com.earmark.app.data.Book
-import com.earmark.app.data.Bookmark
-import com.earmark.app.playback.PlaybackState
-import com.earmark.app.playback.PlayerConnection
-import com.earmark.app.playback.SleepTimer
+import com.talewind.app.TalewindApp
+import com.talewind.app.data.Book
+import com.talewind.app.data.Bookmark
+import com.talewind.app.playback.PlaybackState
+import com.talewind.app.playback.PlayerConnection
+import com.talewind.app.playback.SleepTimer
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
@@ -106,7 +106,7 @@ fun PlayerScreen(book: Book, state: PlaybackState, conn: PlayerConnection, onClo
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun PlayerContent(book: Book, state: PlaybackState, conn: PlayerConnection, onClose: () -> Unit) {
-    val app = EarmarkApp.instance
+    val app = TalewindApp.instance
     val context = LocalContext.current
     val skipBack by app.settings.skipBackSec.collectAsStateWithLifecycle()
     val skipFwd by app.settings.skipForwardSec.collectAsStateWithLifecycle()
@@ -472,7 +472,7 @@ private fun ChapterList(book: Book, position: Long, current: Int, conn: PlayerCo
 
 @Composable
 private fun BookmarkList(book: Book, conn: PlayerConnection, onDone: () -> Unit) {
-    val app = EarmarkApp.instance
+    val app = TalewindApp.instance
     var editing by remember { mutableStateOf<Bookmark?>(null) }
     if (book.bookmarks.isEmpty()) {
         Text(

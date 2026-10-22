@@ -12,5 +12,5 @@ dependencyResolutionManagement {
         mavenCentral()
     }
 }
-rootProject.name = "Earmark"
+rootProject.name = "Talewind"
 include(":app")

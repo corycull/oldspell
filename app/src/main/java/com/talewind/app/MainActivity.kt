@@ -1,4 +1,4 @@
-package com.earmark.app
+package com.talewind.app
 
 import android.Manifest
 import android.content.Intent
@@ -43,15 +43,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.earmark.app.data.Book
-import com.earmark.app.playback.PlayerConnection
-import com.earmark.app.ui.EarmarkTheme
-import com.earmark.app.ui.HomeScreen
-import com.earmark.app.ui.LibraryScreen
-import com.earmark.app.ui.MiniPlayer
-import com.earmark.app.ui.Palette
-import com.earmark.app.ui.PlayerScreen
-import com.earmark.app.ui.SettingsScreen
+import com.talewind.app.data.Book
+import com.talewind.app.playback.PlayerConnection
+import com.talewind.app.ui.TalewindTheme
+import com.talewind.app.ui.HomeScreen
+import com.talewind.app.ui.LibraryScreen
+import com.talewind.app.ui.MiniPlayer
+import com.talewind.app.ui.Palette
+import com.talewind.app.ui.PlayerScreen
+import com.talewind.app.ui.SettingsScreen
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
@@ -64,9 +64,9 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         conn = PlayerConnection(applicationContext)
         if (intent?.getBooleanExtra(EXTRA_OPEN_PLAYER, false) == true) openPlayerRequests.value++
-        if (savedInstanceState == null) EarmarkApp.instance.rescan()
+        if (savedInstanceState == null) TalewindApp.instance.rescan()
         setContent {
-            EarmarkTheme { AppRoot(conn, openPlayerRequests) }
+            TalewindTheme { AppRoot(conn, openPlayerRequests) }
         }
     }
 
@@ -92,7 +92,7 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 private fun AppRoot(conn: PlayerConnection, openRequests: StateFlow<Int>) {
-    val app = EarmarkApp.instance
+    val app = TalewindApp.instance
     val context = LocalContext.current
     val books by app.store.books.collectAsStateWithLifecycle()
     val scanStatus by app.store.scanStatus.collectAsStateWithLifecycle()

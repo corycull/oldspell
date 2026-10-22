@@ -1,4 +1,4 @@
-package com.earmark.app.data
+package com.talewind.app.data
 
 import java.io.EOFException
 import java.nio.ByteBuffer

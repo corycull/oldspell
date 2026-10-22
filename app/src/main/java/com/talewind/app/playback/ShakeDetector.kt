@@ -1,4 +1,4 @@
-package com.earmark.app.playback
+package com.talewind.app.playback
 
 import android.content.Context
 import android.hardware.Sensor

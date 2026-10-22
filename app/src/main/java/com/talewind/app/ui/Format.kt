@@ -1,4 +1,4 @@
-package com.earmark.app.ui
+package com.talewind.app.ui
 
 import java.util.Locale
 

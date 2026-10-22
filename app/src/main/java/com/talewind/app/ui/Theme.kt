@@ -1,4 +1,4 @@
-package com.earmark.app.ui
+package com.talewind.app.ui
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Typography
@@ -53,6 +53,6 @@ private val type = base.copy(
 )
 
 @Composable
-fun EarmarkTheme(content: @Composable () -> Unit) {
+fun TalewindTheme(content: @Composable () -> Unit) {
     MaterialTheme(colorScheme = scheme, typography = type, content = content)
 }

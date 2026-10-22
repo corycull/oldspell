@@ -1,4 +1,4 @@
-# Earmark
+# Talewind
 
 An audiobook player for Android that plays the audiobook files already on your phone, with a
 dark, cover-art-first design and the controls you'd expect from a dedicated audiobook app.
@@ -25,22 +25,42 @@ dark, cover-art-first design and the controls you'd expect from a dedicated audi
 - Position saved every 5 seconds and on every pause or seek, so you always resume where you were.
 - Mark as finished / unfinished, reset progress, remove from library (and restore later).
 
-## Getting the APK onto your phone
+## Signing key (one-time setup)
 
-You need to build it once; there are two ways.
+Builds are signed with your private upload key, which is never stored in this repo.
+Add it once as two repository secrets: on GitHub open **Settings → Secrets and variables →
+Actions → New repository secret** and create:
 
-**Option A: GitHub (no computer software needed)**
-1. Create a new repository on github.com and upload the contents of this folder
-   (keep the `.github` folder; it holds the build script).
-2. Open the repo's **Actions** tab. The "Build APK" workflow runs automatically
-   (or tap *Run workflow*). It takes about 5 minutes.
-3. Open the repo's **Releases** page on your phone and download `Earmark.apk`.
-4. Open the downloaded file and allow "Install unknown apps" for your browser when asked.
+| Name | Value |
+|---|---|
+| `RELEASE_KEYSTORE_BASE64` | the full contents of `RELEASE_KEYSTORE_BASE64.txt` |
+| `RELEASE_KEYSTORE_PASSWORD` | the contents of `RELEASE_KEYSTORE_PASSWORD.txt` |
 
-**Option B: Android Studio**
-1. Open this folder in Android Studio (Ladybug or newer) and let Gradle sync.
-2. Plug in your phone with USB debugging on and press Run, or use
-   *Build → Build APK(s)* and copy `app/build/outputs/apk/debug/app-debug.apk` to the phone.
+Keep `talewind-upload.jks` and its password backed up somewhere safe (a password manager is
+ideal). If you lose them, Google Play can reset the upload key, but it takes a support request.
+
+## Getting the app
+
+Every push to `main` builds the app on GitHub (Actions tab, about 5 minutes) and publishes it
+on the **Releases** page:
+
+- `Talewind.apk` installs directly on your phone (allow "Install unknown apps" when asked).
+- `Talewind.aab` is the file you upload to Google Play.
+
+To build locally instead, open the folder in Android Studio and press Run.
+
+## Publishing on Google Play
+
+1. Create a developer account at play.google.com/console (one-time US$25 fee).
+2. Create an app named Talewind and upload `Talewind.aab` from the latest release.
+   Keep **Play App Signing** on; Google then holds the final signing key and your
+   `talewind-upload.jks` acts as the upload key.
+3. For the privacy policy URL, use the link to `PRIVACY.md` in this repo.
+4. Data safety form: the app collects and shares no data.
+5. Each new upload needs a higher version code; the build number handles that automatically.
+
+Before publishing, search the USPTO trademark database and Google Play for "Talewind" to make
+sure the name is free. Don't use other companies' names (e.g. Audible) in the listing.
 
 ## First run
 
@@ -54,7 +74,7 @@ Requires Android 8.0 or newer.
 ## Project layout
 
 ```
-app/src/main/java/com/earmark/app/
+app/src/main/java/com/talewind/app/
   data/       Book model, JSON library store, folder scanner, MP4 chapter reader
   playback/   Media3 playback service, controller connection, sleep timer, shake detector
   ui/         Compose screens: Home, Library, Player, Settings, mini player

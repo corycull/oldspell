@@ -1,4 +1,4 @@
-package com.earmark.app.playback
+package com.talewind.app.playback
 
 import android.app.PendingIntent
 import android.content.Intent
@@ -15,9 +15,9 @@ import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.extractor.DefaultExtractorsFactory
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
-import com.earmark.app.EarmarkApp
-import com.earmark.app.MainActivity
-import com.earmark.app.data.Book
+import com.talewind.app.TalewindApp
+import com.talewind.app.MainActivity
+import com.talewind.app.data.Book
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import kotlinx.coroutines.CoroutineScope
@@ -40,7 +40,7 @@ class PlaybackService : MediaSessionService() {
     private var session: MediaSession? = null
     private lateinit var exo: ExoPlayer
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
-    private val app get() = EarmarkApp.instance
+    private val app get() = TalewindApp.instance
     private var lastSaveAt = 0L
     private var lastTickAt = 0L
     private var shake: ShakeDetector? = null

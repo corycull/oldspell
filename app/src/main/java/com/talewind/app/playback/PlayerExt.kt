@@ -1,10 +1,10 @@
-package com.earmark.app.playback
+package com.talewind.app.playback
 
 import android.net.Uri
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
-import com.earmark.app.data.Book
+import com.talewind.app.data.Book
 import java.io.File
 
 /** Media item IDs look like "<bookId>#<trackIndex>". */

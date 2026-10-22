@@ -1,4 +1,4 @@
-package com.earmark.app.ui
+package com.talewind.app.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -46,8 +46,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.earmark.app.data.Book
-import com.earmark.app.playback.PlaybackState
+import com.talewind.app.data.Book
+import com.talewind.app.playback.PlaybackState
 import java.util.Calendar
 
 // ---------------------------------------------------------------- Home
@@ -76,7 +76,7 @@ fun HomeScreen(
                 else -> "Good evening"
             }
             Column(Modifier.padding(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 12.dp)) {
-                Text("EARMARK", style = MaterialTheme.typography.labelSmall, color = Palette.Accent)
+                Text("TALEWIND", style = MaterialTheme.typography.labelSmall, color = Palette.Accent)
                 Text(greeting, style = MaterialTheme.typography.headlineMedium)
             }
         }

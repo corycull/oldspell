@@ -1,4 +1,4 @@
-package com.earmark.app.data
+package com.talewind.app.data
 
 import org.json.JSONArray
 import org.json.JSONObject

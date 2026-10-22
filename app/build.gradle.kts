@@ -5,35 +5,39 @@ plugins {
 }
 
 android {
-    namespace = "com.earmark.app"
+    namespace = "com.talewind.app"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.earmark.app"
+        applicationId = "com.talewind.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
+        // Google Play needs a higher number for every upload; CI uses its run number.
+        versionCode = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 1
+        versionName = "1.0.${System.getenv("GITHUB_RUN_NUMBER") ?: "0"}"
     }
 
-    // A fixed key committed with the project so every build can install as an update
-    // over the previous one. (Fine for a personal app; don't reuse for a Play Store release.)
+    // Release builds are signed with your private upload key. On GitHub it comes from the
+    // RELEASE_KEYSTORE_BASE64 / RELEASE_KEYSTORE_PASSWORD secrets (see README); locally, set the
+    // same environment variables or the release build falls back to the debug key.
+    val keystorePath = System.getenv("RELEASE_KEYSTORE_FILE")
+    val keystorePassword = System.getenv("RELEASE_KEYSTORE_PASSWORD")
+    val hasReleaseKey = !keystorePath.isNullOrBlank() && !keystorePassword.isNullOrBlank()
     signingConfigs {
-        create("earmark") {
-            storeFile = file("earmark.keystore")
-            storePassword = "earmark"
-            keyAlias = "earmark"
-            keyPassword = "earmark"
+        if (hasReleaseKey) {
+            create("release") {
+                storeFile = file(keystorePath!!)
+                storePassword = keystorePassword
+                keyAlias = "upload"
+                keyPassword = keystorePassword
+            }
         }
     }
 
     buildTypes {
-        debug {
-            signingConfig = signingConfigs.getByName("earmark")
-        }
         release {
             isMinifyEnabled = false
-            signingConfig = signingConfigs.getByName("earmark")
+            signingConfig = signingConfigs.getByName(if (hasReleaseKey) "release" else "debug")
         }
     }
     compileOptions {

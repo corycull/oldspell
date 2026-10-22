@@ -1,4 +1,4 @@
-package com.earmark.app.ui
+package com.talewind.app.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -55,8 +55,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import com.earmark.app.EarmarkApp
-import com.earmark.app.data.Book
+import com.talewind.app.TalewindApp
+import com.talewind.app.data.Book
 import java.io.File
 import kotlin.math.abs
 
@@ -170,7 +170,7 @@ fun PlayCircle(isPlaying: Boolean, size: Dp, onClick: () -> Unit, filled: Boolea
 /** Overflow menu shared by library rows and the player. */
 @Composable
 fun BookMenu(book: Book, onRemoved: () -> Unit = {}) {
-    val app = EarmarkApp.instance
+    val app = TalewindApp.instance
     var open by remember { mutableStateOf(false) }
     Box {
         IconButton(onClick = { open = true }) {
