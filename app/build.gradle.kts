@@ -16,11 +16,24 @@ android {
         versionName = "1.0"
     }
 
+    // A fixed key committed with the project so every build can install as an update
+    // over the previous one. (Fine for a personal app; don't reuse for a Play Store release.)
+    signingConfigs {
+        create("earmark") {
+            storeFile = file("earmark.keystore")
+            storePassword = "earmark"
+            keyAlias = "earmark"
+            keyPassword = "earmark"
+        }
+    }
+
     buildTypes {
+        debug {
+            signingConfig = signingConfigs.getByName("earmark")
+        }
         release {
             isMinifyEnabled = false
-            // Signed with the debug key so the release APK installs directly.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("earmark")
         }
     }
     compileOptions {
