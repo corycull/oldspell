@@ -46,6 +46,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
@@ -59,6 +60,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -90,9 +92,20 @@ import kotlin.math.roundToInt
 
 private enum class Sheet { None, Speed, Sleep, Chapters }
 
-@OptIn(ExperimentalMaterial3Api::class)
+/**
+ * The player is drawn on top of the app's Scaffold, so it doesn't inherit the Scaffold's
+ * content color; set white text/icons explicitly or they default to black.
+ */
 @Composable
 fun PlayerScreen(book: Book, state: PlaybackState, conn: PlayerConnection, onClose: () -> Unit) {
+    CompositionLocalProvider(LocalContentColor provides Palette.Text) {
+        PlayerContent(book, state, conn, onClose)
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PlayerContent(book: Book, state: PlaybackState, conn: PlayerConnection, onClose: () -> Unit) {
     val app = EarmarkApp.instance
     val context = LocalContext.current
     val skipBack by app.settings.skipBackSec.collectAsStateWithLifecycle()
