@@ -21,4 +21,4 @@ is not stored.
 **Children:** the app collects no information from anyone, including children.
 
 **Contact:** questions about this policy can be raised on the app's GitHub page:
-https://github.com/corycull/earmark
+https://github.com/corycull/oldspell
