@@ -1,4 +1,4 @@
-package com.talewind.app.ui
+package com.oldspell.app.ui
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
@@ -29,7 +29,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.talewind.app.R
+import com.oldspell.app.R
 
 private data class Library(val name: String, val owner: String, val url: String)
 
@@ -61,7 +61,7 @@ fun LicensesScreen(onBack: () -> Unit) {
         LazyColumn(contentPadding = PaddingValues(bottom = 24.dp)) {
             item {
                 Text(
-                    "Talewind is built with the following open-source software, each licensed under the " +
+                    "Oldspell is built with the following open-source software, each licensed under the " +
                         "Apache License, Version 2.0.",
                     color = Palette.Muted,
                     style = MaterialTheme.typography.bodyMedium,

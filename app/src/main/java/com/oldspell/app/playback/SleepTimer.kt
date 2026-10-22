@@ -1,4 +1,4 @@
-package com.talewind.app.playback
+package com.oldspell.app.playback
 
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

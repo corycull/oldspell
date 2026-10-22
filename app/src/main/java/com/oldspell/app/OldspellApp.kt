@@ -1,10 +1,10 @@
-package com.talewind.app
+package com.oldspell.app
 
 import android.app.Application
-import com.talewind.app.data.LibraryStore
-import com.talewind.app.data.Settings
+import com.oldspell.app.data.LibraryStore
+import com.oldspell.app.data.Settings
 
-class TalewindApp : Application() {
+class OldspellApp : Application() {
     lateinit var settings: Settings
         private set
     lateinit var store: LibraryStore
@@ -20,7 +20,7 @@ class TalewindApp : Application() {
     fun rescan() = store.scan(settings.folders.value, settings.hidden.value)
 
     companion object {
-        lateinit var instance: TalewindApp
+        lateinit var instance: OldspellApp
             private set
     }
 }

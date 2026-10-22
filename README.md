@@ -1,4 +1,4 @@
-# Talewind
+# Oldspell
 
 An audiobook player for Android that plays the audiobook files already on your phone, with a
 dark, cover-art-first design and the controls you'd expect from a dedicated audiobook app.
@@ -36,7 +36,7 @@ Actions → New repository secret** and create:
 | `RELEASE_KEYSTORE_BASE64` | the full contents of `RELEASE_KEYSTORE_BASE64.txt` |
 | `RELEASE_KEYSTORE_PASSWORD` | the contents of `RELEASE_KEYSTORE_PASSWORD.txt` |
 
-Keep `talewind-upload.jks` and its password backed up somewhere safe (a password manager is
+Keep your upload keystore file (`talewind-upload.jks`) and its password backed up somewhere safe (a password manager is
 ideal). If you lose them, Google Play can reset the upload key, but it takes a support request.
 
 ## Getting the app
@@ -44,22 +44,22 @@ ideal). If you lose them, Google Play can reset the upload key, but it takes a s
 Every push to `main` builds the app on GitHub (Actions tab, about 5 minutes) and publishes it
 on the **Releases** page:
 
-- `Talewind.apk` installs directly on your phone (allow "Install unknown apps" when asked).
-- `Talewind.aab` is the file you upload to Google Play.
+- `Oldspell.apk` installs directly on your phone (allow "Install unknown apps" when asked).
+- `Oldspell.aab` is the file you upload to Google Play.
 
 To build locally instead, open the folder in Android Studio and press Run.
 
 ## Publishing on Google Play
 
 1. Create a developer account at play.google.com/console (one-time US$25 fee).
-2. Create an app named Talewind and upload `Talewind.aab` from the latest release.
+2. Create an app named Oldspell and upload `Oldspell.aab` from the latest release.
    Keep **Play App Signing** on; Google then holds the final signing key and your
-   `talewind-upload.jks` acts as the upload key.
+   your upload keystore file (`talewind-upload.jks`) acts as the upload key.
 3. For the privacy policy URL, use the link to `PRIVACY.md` in this repo.
 4. Data safety form: the app collects and shares no data.
 5. Each new upload needs a higher version code; the build number handles that automatically.
 
-Before publishing, search the USPTO trademark database and Google Play for "Talewind" to make
+Before publishing, search the USPTO trademark database and Google Play for "Oldspell" to make
 sure the name is free. Don't use other companies' names (e.g. Audible) in the listing.
 
 ## First run
@@ -74,7 +74,7 @@ Requires Android 8.0 or newer.
 ## Project layout
 
 ```
-app/src/main/java/com/talewind/app/
+app/src/main/java/com/oldspell/app/
   data/       Book model, JSON library store, folder scanner, MP4 chapter reader
   playback/   Media3 playback service, controller connection, sleep timer, shake detector
   ui/         Compose screens: Home, Library, Player, Settings, mini player

@@ -1,10 +1,10 @@
-# Talewind Privacy Policy
+# Oldspell Privacy Policy
 
 _Last updated: October 22, 2026_
 
-Talewind is an audiobook player that plays audio files already stored on your device.
+Oldspell is an audiobook player that plays audio files already stored on your device.
 
-**Data we collect:** none. Talewind has no accounts, no analytics, no advertising and no
+**Data we collect:** none. Oldspell has no accounts, no analytics, no advertising and no
 crash reporting, and it does not connect to the internet.
 
 **Data stored on your device:** to work, the app keeps the following on your phone only:
@@ -12,7 +12,7 @@ the folders you choose to share with it, a list of the books found there (titles
 chapter markers and cover images taken from your files), your listening position,
 bookmarks and settings. None of it leaves your device. Uninstalling the app deletes it.
 
-**Permissions:** Talewind reads only the folders you pick with Android's folder chooser.
+**Permissions:** Oldspell reads only the folders you pick with Android's folder chooser.
 It uses notification and foreground-service permissions so playback controls appear on the
 lock screen and audio keeps playing with the screen off. On some phones it uses the motion
 sensor while a sleep timer is running, to detect a shake that restarts the timer; this data

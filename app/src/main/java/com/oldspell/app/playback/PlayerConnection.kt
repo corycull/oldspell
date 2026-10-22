@@ -1,4 +1,4 @@
-package com.talewind.app.playback
+package com.oldspell.app.playback
 
 import android.content.ComponentName
 import android.content.Context
@@ -6,8 +6,8 @@ import androidx.core.content.ContextCompat
 import androidx.media3.common.Player
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
-import com.talewind.app.TalewindApp
-import com.talewind.app.data.Book
+import com.oldspell.app.OldspellApp
+import com.oldspell.app.data.Book
 import com.google.common.util.concurrent.ListenableFuture
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.MainScope
@@ -29,7 +29,7 @@ data class PlaybackState(
 
 /** UI-side handle to the playback service. All positions are global book positions. */
 class PlayerConnection(private val context: Context) {
-    private val app get() = TalewindApp.instance
+    private val app get() = OldspellApp.instance
     private val scope = MainScope()
     private var future: ListenableFuture<MediaController>? = null
     private var controller: MediaController? = null

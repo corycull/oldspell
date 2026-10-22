@@ -1,4 +1,4 @@
-package com.talewind.app.ui
+package com.oldspell.app.ui
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Typography
@@ -53,6 +53,6 @@ private val type = base.copy(
 )
 
 @Composable
-fun TalewindTheme(content: @Composable () -> Unit) {
+fun OldspellTheme(content: @Composable () -> Unit) {
     MaterialTheme(colorScheme = scheme, typography = type, content = content)
 }

@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace = "com.talewind.app"
+    namespace = "com.oldspell.app"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.talewind.app"
+        applicationId = "com.oldspell.app"
         minSdk = 26
         targetSdk = 35
         // Google Play needs a higher number for every upload; CI uses its run number.

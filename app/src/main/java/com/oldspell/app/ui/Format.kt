@@ -1,4 +1,4 @@
-package com.talewind.app.ui
+package com.oldspell.app.ui
 
 import java.util.Locale
 

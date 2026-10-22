@@ -1,4 +1,4 @@
-package com.talewind.app
+package com.oldspell.app
 
 import android.Manifest
 import android.content.Intent
@@ -43,15 +43,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.talewind.app.data.Book
-import com.talewind.app.playback.PlayerConnection
-import com.talewind.app.ui.TalewindTheme
-import com.talewind.app.ui.HomeScreen
-import com.talewind.app.ui.LibraryScreen
-import com.talewind.app.ui.MiniPlayer
-import com.talewind.app.ui.Palette
-import com.talewind.app.ui.PlayerScreen
-import com.talewind.app.ui.SettingsScreen
+import com.oldspell.app.data.Book
+import com.oldspell.app.playback.PlayerConnection
+import com.oldspell.app.ui.OldspellTheme
+import com.oldspell.app.ui.HomeScreen
+import com.oldspell.app.ui.LibraryScreen
+import com.oldspell.app.ui.MiniPlayer
+import com.oldspell.app.ui.Palette
+import com.oldspell.app.ui.PlayerScreen
+import com.oldspell.app.ui.SettingsScreen
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
@@ -64,9 +64,9 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         conn = PlayerConnection(applicationContext)
         if (intent?.getBooleanExtra(EXTRA_OPEN_PLAYER, false) == true) openPlayerRequests.value++
-        if (savedInstanceState == null) TalewindApp.instance.rescan()
+        if (savedInstanceState == null) OldspellApp.instance.rescan()
         setContent {
-            TalewindTheme { AppRoot(conn, openPlayerRequests) }
+            OldspellTheme { AppRoot(conn, openPlayerRequests) }
         }
     }
 
@@ -92,7 +92,7 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 private fun AppRoot(conn: PlayerConnection, openRequests: StateFlow<Int>) {
-    val app = TalewindApp.instance
+    val app = OldspellApp.instance
     val context = LocalContext.current
     val books by app.store.books.collectAsStateWithLifecycle()
     val scanStatus by app.store.scanStatus.collectAsStateWithLifecycle()

@@ -1,4 +1,4 @@
-package com.talewind.app.playback
+package com.oldspell.app.playback
 
 import android.content.Context
 import android.hardware.Sensor

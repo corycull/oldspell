@@ -1,4 +1,4 @@
-package com.talewind.app.ui
+package com.oldspell.app.ui
 
 import android.content.Intent
 import android.net.Uri
@@ -44,10 +44,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.talewind.app.TalewindApp
-import com.talewind.app.data.Book
-import com.talewind.app.playback.PlaybackState
-import com.talewind.app.playback.PlayerConnection
+import com.oldspell.app.OldspellApp
+import com.oldspell.app.data.Book
+import com.oldspell.app.playback.PlaybackState
+import com.oldspell.app.playback.PlayerConnection
 
 // ---------------------------------------------------------------- Mini player
 
@@ -56,7 +56,7 @@ fun MiniPlayer(book: Book, state: PlaybackState, conn: PlayerConnection, onOpen:
     val active = state.bookId == book.id
     val pos = if (active) state.positionMs else book.positionMs
     val isPlaying = active && state.isPlaying
-    val skipBack by TalewindApp.instance.settings.skipBackSec.collectAsStateWithLifecycle()
+    val skipBack by OldspellApp.instance.settings.skipBackSec.collectAsStateWithLifecycle()
     val chapter = book.chapters.getOrNull(book.chapterIndexAt(pos))
     val chProgress = if (chapter != null && chapter.durationMs > 0) {
         ((pos - chapter.startMs).toFloat() / chapter.durationMs).coerceIn(0f, 1f)
@@ -101,7 +101,7 @@ fun MiniPlayer(book: Book, state: PlaybackState, conn: PlayerConnection, onOpen:
 
 @Composable
 fun SettingsScreen(onAddFolder: () -> Unit) {
-    val app = TalewindApp.instance
+    val app = OldspellApp.instance
     val context = LocalContext.current
     val folders by app.settings.folders.collectAsStateWithLifecycle()
     val hidden by app.settings.hidden.collectAsStateWithLifecycle()
@@ -215,7 +215,7 @@ fun SettingsScreen(onAddFolder: () -> Unit) {
                 name ?: ""
             }
             Text(
-                "Talewind $version",
+                "Oldspell $version",
                 style = MaterialTheme.typography.bodyMedium, color = Palette.Muted,
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
             )
@@ -228,7 +228,7 @@ fun SettingsScreen(onAddFolder: () -> Unit) {
                     .padding(horizontal = 20.dp, vertical = 12.dp),
             )
             Text(
-                "Privacy: Talewind collects no data. Your books and listening progress stay on this phone.",
+                "Privacy: Oldspell collects no data. Your books and listening progress stay on this phone.",
                 style = MaterialTheme.typography.bodySmall, color = Palette.Muted,
                 modifier = Modifier.padding(horizontal = 20.dp),
             )

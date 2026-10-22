@@ -1,4 +1,4 @@
-package com.talewind.app.data
+package com.oldspell.app.data
 
 import org.json.JSONArray
 import org.json.JSONObject

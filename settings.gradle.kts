@@ -12,5 +12,5 @@ dependencyResolutionManagement {
         mavenCentral()
     }
 }
-rootProject.name = "Talewind"
+rootProject.name = "Oldspell"
 include(":app")

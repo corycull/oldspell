@@ -49,21 +49,21 @@ jobs:
           chmod +x gradlew
           ./gradlew --no-daemon assembleRelease bundleRelease
           mkdir -p out
-          cp app/build/outputs/apk/release/app-release.apk out/Talewind.apk
-          cp app/build/outputs/bundle/release/app-release.aab out/Talewind.aab
+          cp app/build/outputs/apk/release/app-release.apk out/Oldspell.apk
+          cp app/build/outputs/bundle/release/app-release.aab out/Oldspell.aab
 
       - uses: actions/upload-artifact@v4
         with:
-          name: Talewind
+          name: Oldspell
           path: out/*
 
-      # Talewind.apk installs directly on your phone; Talewind.aab is what you upload to Google Play.
+      # Oldspell.apk installs directly on your phone; Oldspell.aab is what you upload to Google Play.
       - uses: softprops/action-gh-release@v2
         if: steps.key.outputs.present == 'true'
         with:
           tag_name: build-${{ github.run_number }}
-          name: Talewind build ${{ github.run_number }}
+          name: Oldspell build ${{ github.run_number }}
           files: |
-            out/Talewind.apk
-            out/Talewind.aab
+            out/Oldspell.apk
+            out/Oldspell.aab
           make_latest: true

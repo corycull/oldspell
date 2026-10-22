@@ -7,13 +7,13 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
-        android:name=".TalewindApp"
+        android:name=".OldspellApp"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:supportsRtl="true"
-        android:theme="@style/Theme.Talewind">
+        android:theme="@style/Theme.Oldspell">
 
         <activity
             android:name=".MainActivity"

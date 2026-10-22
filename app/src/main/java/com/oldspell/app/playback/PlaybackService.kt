@@ -1,4 +1,4 @@
-package com.talewind.app.playback
+package com.oldspell.app.playback
 
 import android.app.PendingIntent
 import android.content.Intent
@@ -15,9 +15,9 @@ import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.extractor.DefaultExtractorsFactory
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
-import com.talewind.app.TalewindApp
-import com.talewind.app.MainActivity
-import com.talewind.app.data.Book
+import com.oldspell.app.OldspellApp
+import com.oldspell.app.MainActivity
+import com.oldspell.app.data.Book
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import kotlinx.coroutines.CoroutineScope
@@ -40,7 +40,7 @@ class PlaybackService : MediaSessionService() {
     private var session: MediaSession? = null
     private lateinit var exo: ExoPlayer
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
-    private val app get() = TalewindApp.instance
+    private val app get() = OldspellApp.instance
     private var lastSaveAt = 0L
     private var lastTickAt = 0L
     private var shake: ShakeDetector? = null
