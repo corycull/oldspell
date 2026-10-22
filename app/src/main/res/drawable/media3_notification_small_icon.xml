@@ -1,6 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Status-bar icon: the thorn-ribbon mark as a white silhouette. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp" android:height="24dp"
-    android:viewportWidth="24" android:viewportHeight="24">
+    android:viewportWidth="100" android:viewportHeight="100">
+    <path android:strokeColor="#FFFFFFFF" android:strokeWidth="10"
+        android:pathData="M43,33.5 H54 A16.5,16.5 0 0,1 54,66.5 H43" />
     <path android:fillColor="#FFFFFFFF"
-        android:pathData="M7,3h10a2,2 0,0 1,2 2v16l-7,-4.5L5,21V5a2,2 0,0 1,2 -2z" />
+        android:pathData="M25,10 H43 V90 L34,82 L25,90 Z" />
 </vector>

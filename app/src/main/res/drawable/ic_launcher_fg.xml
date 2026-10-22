@@ -1,10 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Oldspell "Thorn Ribbon": the Old English letter þ, its stem a bookmark ribbon.
+     Drawn on a 100-unit grid, scaled to sit inside the adaptive-icon safe zone. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp" android:height="108dp"
     android:viewportWidth="108" android:viewportHeight="108">
-    <path android:fillColor="#FFFF9F1C"
-        android:pathData="M40,30 L60,30 Q64,30 64,34 L64,78 L50,69 L36,78 L36,34 Q36,30 40,30 Z" />
-    <path android:strokeColor="#FFFF9F1C" android:strokeWidth="4" android:strokeLineCap="round"
-        android:pathData="M70,44 Q75,54 70,64" />
-    <path android:strokeColor="#FFFF9F1C" android:strokeWidth="4" android:strokeLineCap="round"
-        android:pathData="M77,38 Q85,54 77,70" />
+    <group android:translateX="18" android:translateY="18" android:scaleX="0.72" android:scaleY="0.72">
+        <path android:strokeColor="#FFFF9F1C" android:strokeWidth="9"
+            android:pathData="M43,33.5 H54 A16.5,16.5 0 0,1 54,66.5 H43" />
+        <path android:fillColor="#FFFF9F1C"
+            android:pathData="M25,14 H43 V86 L34,78 L25,86 Z" />
+        <path android:strokeColor="#FFFFC46B" android:strokeWidth="1.6" android:strokeLineCap="round"
+            android:pathData="M28.5,18 V74" />
+    </group>
 </vector>
