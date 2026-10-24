@@ -1,7 +1,6 @@
 package com.oldspell.app.data
 
 import android.content.Context
-import android.net.Uri
 import android.util.Log
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -98,43 +97,59 @@ class LibraryStore(private val context: Context) {
         persist()
     }
 
-    fun removeFolder(folderUri: String) {
-        _books.update { list -> list.filterNot { it.folderUri == folderUri } }
-        persist()
-    }
+    /** Top-level folders on the phone that hold audio (empty until audio access is granted). */
+    private val _folders = MutableStateFlow<List<AudioFolder>>(emptyList())
+    val folders: StateFlow<List<AudioFolder>> = _folders.asStateFlow()
+    private var scanGeneration = 0
 
-    fun scan(folders: List<String>, hidden: Set<String>) {
-        if (scanJob?.isActive == true) return
+    /** Re-reads the phone's audio library. A new request cancels one already running. */
+    fun scan(settings: Settings) {
+        scanJob?.cancel()
+        val gen = ++scanGeneration
         scanJob = scope.launch {
+            if (!Scanner.hasPermission(context)) {
+                _folders.value = emptyList()
+                return@launch
+            }
             _scanStatus.value = "Looking for audiobooks…"
             try {
+                val files = Scanner.query(context)
+                val folders = Scanner.folders(files)
+                _folders.value = folders
+                val included = settings.includedFolders.value
+                    ?: folders.filter { it.looksLikeBooks }.map { it.key }.toSet()
+                        .also { if (folders.isNotEmpty()) settings.setIncluded(it) }
+
                 val existing = _books.value.associateBy { it.id }
-                val found = ArrayList<Book>()
-                for (folder in folders) {
-                    try {
-                        found += Scanner.scan(context, Uri.parse(folder), existing) { _scanStatus.value = it }
-                    } catch (e: Exception) {
-                        // Folder unreadable (moved, permission revoked): keep what we already had.
-                        Log.w(TAG, "Scan failed for $folder", e)
-                        found += existing.values.filter { it.folderUri == folder }
-                    }
-                }
-                val result = found.filter { it.id !in hidden }.distinctBy { it.id }
-                // Merge with live state so progress saved during the scan isn't lost.
+                val hidden = settings.hidden.value
+                val result = Scanner.buildBooks(context, files, included, existing) { _scanStatus.value = it }
+                    .filter { it.id !in hidden }
+                    .distinctBy { it.id }
+
+                // Merge with live state so progress saved during the scan isn't lost. Books found under a
+                // new id (e.g. after the switch away from the folder picker) keep the progress of the old
+                // entry with the same title and length.
                 _books.update { current ->
                     val live = current.associateBy { it.id }
+                    val unmatched = current.filter { c -> result.none { it.id == c.id } }.toMutableList()
                     result.map { b ->
-                        live[b.id]?.let { c ->
-                            b.copy(
-                                positionMs = c.positionMs, lastPlayedAt = c.lastPlayedAt,
-                                finished = c.finished, bookmarks = c.bookmarks,
-                            )
-                        } ?: b
+                        val c = live[b.id] ?: unmatched.firstOrNull { o ->
+                            o.title.equals(b.title, ignoreCase = true) && kotlin.math.abs(o.durationMs - b.durationMs) < 3_000
+                        }?.also { unmatched.remove(it) }
+                        if (c == null) b else b.copy(
+                            positionMs = c.positionMs.coerceAtMost(b.durationMs), lastPlayedAt = c.lastPlayedAt,
+                            finished = c.finished, bookmarks = c.bookmarks, addedAt = c.addedAt,
+                            coverPath = b.coverPath ?: c.coverPath,
+                        )
                     }
                 }
                 persist()
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.w(TAG, "Scan failed", e)
             } finally {
-                _scanStatus.value = null
+                if (gen == scanGeneration) _scanStatus.value = null
             }
         }
     }

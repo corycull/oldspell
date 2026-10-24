@@ -1,188 +1,276 @@
 package com.oldspell.app.data
 
+import android.Manifest
+import android.content.ContentUris
 import android.content.Context
+import android.content.pm.PackageManager
 import android.media.MediaExtractor
 import android.media.MediaFormat
 import android.media.MediaMetadataRetriever
 import android.net.Uri
-import android.provider.DocumentsContract
+import android.os.Build
+import android.os.Environment
+import android.provider.MediaStore
 import android.util.Log
+import androidx.core.content.ContextCompat
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.security.MessageDigest
 
+/** A top-level folder on the phone that holds audio, e.g. "Internal storage / Download". */
+data class AudioFolder(
+    val key: String,
+    val label: String,
+    val bookCount: Int,
+    /** Pre-ticked the first time: named like an audiobook folder, holds .m4b files, or is Download. */
+    val looksLikeBooks: Boolean,
+)
+
 /**
- * Walks a folder the user picked and turns it into books:
+ * Finds audiobooks through Android's media library (MediaStore), so the user never has to pick a
+ * folder in the system picker, which refuses Download, the storage root and others.
+ *
  *  - every .m4b file is its own book (chapters read from the file),
  *  - every folder holding other audio files (mp3, m4a, ogg, …) is one book, one chapter per file,
  *  - a folder whose only content is "CD 1", "Disc 2", "Part 3"… subfolders is one book.
+ *
+ * The user chooses which top-level folders count (so music elsewhere stays out).
  */
 object Scanner {
     private const val TAG = "Scanner"
-    private val AUDIO = setOf(
-        "mp3", "m4a", "m4b", "mp4", "aac", "ogg", "oga", "opus", "flac", "wav", "mka", "webm", "amr", "3gp",
-    )
-    private val IMAGE = setOf("jpg", "jpeg", "png", "webp")
-    private val COVER_NAMES = setOf("cover", "folder", "front", "albumart", "poster")
     private val DISC = Regex("""^(cd|disc|disk|part|teil|vol(ume)?)[\s._-]*\d+.*""", RegexOption.IGNORE_CASE)
+    private val BOOKISH = Regex(
+        """audio\s*-?books?|h[öo]rb[üu]ch(er)?|livres?\s*audio|audiolibr|^books?$|^podcasts?$""",
+        RegexOption.IGNORE_CASE,
+    )
+    private val CHAPTER_CONTAINERS = setOf("m4b", "m4a", "mp4", "aac")
 
-    private data class Doc(val id: String, val name: String, val mime: String) {
-        val isDir: Boolean get() = mime == DocumentsContract.Document.MIME_TYPE_DIR
+    class AudioFile(
+        val uri: Uri,
+        val name: String,
+        /** "<volume>:<relative/dir>" with no trailing slash; "" relative part = top of the volume. */
+        val dir: String,
+        val durationMs: Long,
+        val title: String?,
+        val album: String?,
+        val artist: String?,
+    ) {
         val ext: String get() = name.substringAfterLast('.', "").lowercase()
         val base: String get() = name.substringBeforeLast('.')
     }
 
-    private fun children(context: Context, tree: Uri, parentId: String): List<Doc> {
-        val uri = DocumentsContract.buildChildDocumentsUriUsingTree(tree, parentId)
-        val cols = arrayOf(
-            DocumentsContract.Document.COLUMN_DOCUMENT_ID,
-            DocumentsContract.Document.COLUMN_DISPLAY_NAME,
-            DocumentsContract.Document.COLUMN_MIME_TYPE,
-        )
-        val out = ArrayList<Doc>()
-        context.contentResolver.query(uri, cols, null, null, null)?.use { c ->
+    private class Group(val key: String, val title: String, val topKey: String, val files: List<AudioFile>)
+
+    fun permission(): String =
+        if (Build.VERSION.SDK_INT >= 33) Manifest.permission.READ_MEDIA_AUDIO
+        else Manifest.permission.READ_EXTERNAL_STORAGE
+
+    fun hasPermission(context: Context): Boolean =
+        ContextCompat.checkSelfPermission(context, permission()) == PackageManager.PERMISSION_GRANTED
+
+    // ------------------------------------------------------------------ MediaStore
+
+    fun query(context: Context): List<AudioFile> {
+        val collection = if (Build.VERSION.SDK_INT >= 29) {
+            MediaStore.Audio.Media.getContentUri(MediaStore.VOLUME_EXTERNAL)
+        } else {
+            MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
+        }
+        val modern = Build.VERSION.SDK_INT >= 29
+        val cols = buildList {
+            add(MediaStore.Audio.Media._ID)
+            add(MediaStore.Audio.Media.DISPLAY_NAME)
+            add(MediaStore.Audio.Media.DURATION)
+            add(MediaStore.Audio.Media.TITLE)
+            add(MediaStore.Audio.Media.ALBUM)
+            add(MediaStore.Audio.Media.ARTIST)
+            if (modern) {
+                add(MediaStore.Audio.Media.RELATIVE_PATH)
+                add(MediaStore.Audio.Media.VOLUME_NAME)
+            } else {
+                @Suppress("DEPRECATION")
+                add(MediaStore.Audio.Media.DATA)
+            }
+        }.toTypedArray()
+        // Leave out ringtones, alarms, notification sounds and voice recordings.
+        var selection = "${MediaStore.Audio.Media.IS_RINGTONE}=0 AND " +
+            "${MediaStore.Audio.Media.IS_ALARM}=0 AND ${MediaStore.Audio.Media.IS_NOTIFICATION}=0"
+        if (Build.VERSION.SDK_INT >= 31) selection += " AND ${MediaStore.Audio.Media.IS_RECORDING}=0"
+
+        val out = ArrayList<AudioFile>()
+        context.contentResolver.query(collection, cols, selection, null, null)?.use { c ->
             while (c.moveToNext()) {
-                out += Doc(c.getString(0), c.getString(1) ?: "", c.getString(2) ?: "")
+                val id = c.getLong(0)
+                val name = c.getString(1) ?: continue
+                if (name.startsWith(".")) continue
+                val dir = if (modern) {
+                    val rel = (c.getString(6) ?: "").trim('/')
+                    val vol = c.getString(7) ?: MediaStore.VOLUME_EXTERNAL_PRIMARY
+                    "$vol:$rel"
+                } else {
+                    legacyDir(c.getString(6) ?: continue)
+                }
+                out += AudioFile(
+                    uri = ContentUris.withAppendedId(collection, id),
+                    name = name,
+                    dir = dir,
+                    durationMs = c.getLong(2).coerceAtLeast(0),
+                    title = c.getString(3)?.takeUnless { it.isBlank() || it == "<unknown>" },
+                    album = c.getString(4)?.takeUnless { it.isBlank() || it == "<unknown>" },
+                    artist = c.getString(5)?.takeUnless { it.isBlank() || it == "<unknown>" },
+                )
             }
         }
         return out
     }
 
-    suspend fun scan(
+    /** Android 8–9: turn "/storage/emulated/0/Download/x.mp3" into "external_primary:Download". */
+    private fun legacyDir(path: String): String {
+        val parent = File(path).parent ?: return "external_primary:"
+        @Suppress("DEPRECATION")
+        val primary = Environment.getExternalStorageDirectory().absolutePath
+        if (parent == primary || parent.startsWith("$primary/")) {
+            return "external_primary:" + parent.removePrefix(primary).trim('/')
+        }
+        // "/storage/1234-ABCD/Audiobooks" → "1234-abcd:Audiobooks"
+        val rest = parent.removePrefix("/storage/").trim('/')
+        val vol = rest.substringBefore('/')
+        return vol.lowercase() + ":" + rest.substringAfter('/', "")
+    }
+
+    private fun volumeOf(dir: String) = dir.substringBefore(':')
+    private fun relOf(dir: String) = dir.substringAfter(':')
+    private fun parentOf(dir: String): String? {
+        val rel = relOf(dir)
+        if (rel.isEmpty()) return null
+        return volumeOf(dir) + ":" + (if ('/' in rel) rel.substringBeforeLast('/') else "")
+    }
+    private fun nameOf(dir: String) = relOf(dir).substringAfterLast('/')
+    private fun topKeyOf(dir: String) = volumeOf(dir) + ":" + relOf(dir).substringBefore('/')
+
+    fun folderLabel(key: String): String {
+        val vol = volumeOf(key)
+        val top = relOf(key)
+        val volLabel = if (vol == "external_primary" || vol == "external") "Internal storage" else "SD card"
+        return if (top.isEmpty()) "$volLabel (top level)" else "$volLabel / $top"
+    }
+
+    // ------------------------------------------------------------------ Grouping
+
+    private fun groups(files: List<AudioFile>): List<Group> {
+        val byDir = files.groupBy { it.dir }
+        // Parents whose audio lives only in "CD 1 / CD 2 …" subfolders become a single book.
+        val discChildren = byDir.keys
+            .filter { DISC.matches(nameOf(it)) }
+            .groupBy { parentOf(it) }
+        val mergedInto = HashMap<String, String>()
+        for ((parent, kids) in discChildren) {
+            if (parent != null && parent !in byDir && kids.size >= 2) kids.forEach { mergedInto[it] = parent }
+        }
+        val bookDirs = LinkedHashMap<String, MutableList<AudioFile>>()
+        for ((dir, list) in byDir) bookDirs.getOrPut(mergedInto[dir] ?: dir) { ArrayList() } += list
+
+        val out = ArrayList<Group>()
+        for ((dir, list) in bookDirs) {
+            val sorted = list.sortedWith(compareBy<AudioFile, String>(NaturalOrder) { it.dir }.thenBy(NaturalOrder) { it.name })
+            val (singles, grouped) = sorted.partition { it.ext == "m4b" }
+            for (s in singles) out += Group("file:${s.uri}", s.base, topKeyOf(dir), listOf(s))
+            if (grouped.isNotEmpty()) {
+                val title = nameOf(dir).ifEmpty { folderLabel(dir) }
+                out += Group("dir:$dir", title, topKeyOf(dir), grouped)
+            }
+        }
+        return out
+    }
+
+    fun folders(files: List<AudioFile>): List<AudioFolder> {
+        val gs = groups(files)
+        return gs.groupBy { it.topKey }.map { (key, list) ->
+            val top = relOf(key)
+            AudioFolder(
+                key = key,
+                label = folderLabel(key),
+                bookCount = list.size,
+                looksLikeBooks = BOOKISH.containsMatchIn(top) ||
+                    top.equals("Download", true) || top.equals("Downloads", true) ||
+                    list.any { g -> g.files.any { it.ext == "m4b" } },
+            )
+        }.sortedWith(compareBy<AudioFolder> { !it.looksLikeBooks }.thenBy(NaturalOrder) { it.label })
+    }
+
+    suspend fun buildBooks(
         context: Context,
-        tree: Uri,
+        files: List<AudioFile>,
+        included: Set<String>,
         existing: Map<String, Book>,
         progress: (String) -> Unit,
     ): List<Book> = withContext(Dispatchers.IO) {
-        val out = ArrayList<Book>()
-        val rootId = DocumentsContract.getTreeDocumentId(tree)
-        val rootName = rootId.substringAfterLast(':').substringAfterLast('/').ifEmpty { "Audiobooks" }
-        walk(context, tree, rootId, rootName, existing, out, progress, 0)
-        out
+        groups(files).filter { it.topKey in included }.mapNotNull { g ->
+            ensureActive()
+            buildBook(context, g, existing, progress)
+        }
     }
 
-    private fun walk(
-        context: Context, tree: Uri, docId: String, name: String,
-        existing: Map<String, Book>, out: MutableList<Book>, progress: (String) -> Unit, depth: Int,
-    ) {
-        if (depth > 10) return
-        val kids = children(context, tree, docId)
-        val dirs = kids.filter { it.isDir && !it.name.startsWith(".") }.sortedWith(compareBy<Doc, String>(NaturalOrder) { it.name })
-        val audio = kids.filter { !it.isDir && it.ext in AUDIO && !it.name.startsWith(".") }
-            .sortedWith(compareBy<Doc, String>(NaturalOrder) { it.name })
-        val cover = pickCover(kids)
-
-        // "Book/CD 1, Book/CD 2" layout → one book.
-        if (audio.isEmpty() && dirs.size >= 2 && dirs.all { DISC.matches(it.name) }) {
-            val parts = dirs.flatMap { d ->
-                children(context, tree, d.id)
-                    .filter { !it.isDir && it.ext in AUDIO && !it.name.startsWith(".") }
-                    .sortedWith(compareBy<Doc, String>(NaturalOrder) { it.name })
-            }
-            if (parts.isNotEmpty()) {
-                val discCover = cover ?: dirs.firstNotNullOfOrNull { pickCover(children(context, tree, it.id)) }
-                buildBook(context, tree, docId, name, parts, discCover, existing, progress)?.let { out += it }
-                return
-            }
-        }
-
-        val (singles, grouped) = audio.partition { it.ext == "m4b" }
-        for (s in singles) {
-            buildBook(context, tree, s.id, s.base, listOf(s), cover, existing, progress)?.let { out += it }
-        }
-        if (grouped.isNotEmpty()) {
-            buildBook(context, tree, docId, name, grouped, cover, existing, progress)?.let { out += it }
-        }
-        for (d in dirs) walk(context, tree, d.id, d.name, existing, out, progress, depth + 1)
-    }
-
-    private fun pickCover(kids: List<Doc>): Doc? {
-        val images = kids.filter { !it.isDir && it.ext in IMAGE }
-        return images.firstOrNull { it.base.lowercase() in COVER_NAMES } ?: images.firstOrNull()
-    }
-
-    private fun buildBook(
-        context: Context, tree: Uri, sourceDocId: String, fallbackTitle: String, files: List<Doc>,
-        coverDoc: Doc?, existing: Map<String, Book>, progress: (String) -> Unit,
-    ): Book? {
-        val sourceUri = DocumentsContract.buildDocumentUriUsingTree(tree, sourceDocId).toString()
-        val id = sha1(sourceUri).take(20)
-        val uris = files.map { DocumentsContract.buildDocumentUriUsingTree(tree, it.id) }
+    private fun buildBook(context: Context, g: Group, existing: Map<String, Book>, progress: (String) -> Unit): Book? {
+        val id = sha1(g.key).take(20)
+        val uris = g.files.map { it.uri.toString() }
         val prev = existing[id]
-        if (prev != null && prev.tracks.map { it.uri } == uris.map { it.toString() }) return prev
+        if (prev != null && prev.tracks.map { it.uri } == uris && prev.folderUri == g.topKey) return prev
 
-        progress("Reading “$fallbackTitle”")
-        var album: String? = null
-        var bookTitle: String? = null
+        progress("Reading “${g.title}”")
+        val first = g.files.first()
         var author: String? = null
         var narrator: String? = null
         var picture: ByteArray? = null
-
-        val tracks = files.mapIndexed { i, doc ->
-            var title: String? = null
-            var duration = 0L
-            val mmr = MediaMetadataRetriever()
-            try {
-                mmr.setDataSource(context, uris[i])
-                duration = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull() ?: 0L
-                title = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE)
-                if (i == 0) {
-                    album = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUM)
-                    bookTitle = title
-                    author = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUMARTIST)
-                        ?.takeIf { it.isNotBlank() }
-                        ?: mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST)
-                        ?: mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_AUTHOR)
-                    narrator = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_COMPOSER)
-                    picture = mmr.embeddedPicture
-                }
-            } catch (e: Exception) {
-                Log.w(TAG, "Metadata failed for ${doc.name}", e)
-            } finally {
-                try { mmr.release() } catch (_: Exception) {}
-            }
-            if (duration <= 0) duration = extractorDuration(context, uris[i])
-            Track(uris[i].toString(), title?.trim()?.takeIf { it.isNotEmpty() } ?: doc.base, duration)
+        var firstTitle: String? = null
+        val mmr = MediaMetadataRetriever()
+        try {
+            mmr.setDataSource(context, first.uri)
+            author = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUMARTIST)?.takeIf { it.isNotBlank() }
+                ?: mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST)?.takeIf { it.isNotBlank() }
+                ?: mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_AUTHOR)
+            narrator = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_COMPOSER)
+            firstTitle = mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE)
+            picture = mmr.embeddedPicture
+        } catch (e: Exception) {
+            Log.w(TAG, "Metadata failed for ${first.name}", e)
+        } finally {
+            try { mmr.release() } catch (_: Exception) {}
         }
+
+        val tracks = g.files.map { f ->
+            val d = if (f.durationMs > 0) f.durationMs else probeDuration(context, f.uri)
+            Track(f.uri.toString(), f.title ?: f.base, d)
+        }
+        val total = tracks.sumOf { it.durationMs }
         if (tracks.isEmpty()) return null
 
-        val title = if (files.size == 1) {
-            album?.takeIf { it.isNotBlank() } ?: bookTitle?.takeIf { it.isNotBlank() } ?: fallbackTitle
-        } else {
-            album?.takeIf { it.isNotBlank() } ?: fallbackTitle
-        }.trim()
+        val title = (first.album ?: if (g.files.size == 1) firstTitle ?: first.title else null)
+            ?.trim()?.takeIf { it.isNotEmpty() } ?: g.title
 
-        val total = tracks.sumOf { it.durationMs }
         val chapters: List<Chapter> = run {
-            if (files.size == 1) {
-                val embedded = if (files[0].ext in setOf("m4b", "m4a", "mp4", "aac")) {
-                    Mp4Chapters.read(context, uris[0], total)
-                } else emptyList()
-                if (embedded.size > 1) return@run embedded
-                return@run listOf(Chapter(title, 0, total))
+            if (g.files.size == 1) {
+                val embedded = if (first.ext in CHAPTER_CONTAINERS) Mp4Chapters.read(context, first.uri, total) else emptyList()
+                return@run if (embedded.size > 1) embedded else listOf(Chapter(title, 0, total))
             }
             // One chapter per file. If every file carries the same title tag, file names are more useful.
             val tagTitlesUseful = tracks.map { it.name }.distinct().size == tracks.size
             var start = 0L
             tracks.mapIndexed { i, t ->
-                val name = if (tagTitlesUseful) t.name else files[i].base
-                Chapter(name, start, t.durationMs).also { start += t.durationMs }
+                Chapter(if (tagTitlesUseful) t.name else g.files[i].base, start, t.durationMs).also { start += t.durationMs }
             }
         }
-
-        val coverPath = saveCover(context, id, picture, coverDoc?.let {
-            DocumentsContract.buildDocumentUriUsingTree(tree, it.id)
-        })
 
         return Book(
             id = id,
             title = title,
-            author = author?.trim()?.takeIf { it.isNotEmpty() } ?: "Unknown author",
+            author = author?.trim()?.takeIf { it.isNotEmpty() } ?: first.artist ?: "Unknown author",
             narrator = narrator?.trim().orEmpty(),
-            sourceUri = sourceUri,
-            folderUri = tree.toString(),
-            coverPath = coverPath,
+            sourceUri = g.key,
+            folderUri = g.topKey,
+            coverPath = saveCover(context, id, picture) ?: prev?.coverPath,
             tracks = tracks,
             chapters = chapters,
             addedAt = prev?.addedAt ?: System.currentTimeMillis(),
@@ -193,17 +281,12 @@ object Scanner {
         )
     }
 
-    private fun saveCover(context: Context, id: String, embedded: ByteArray?, imageUri: Uri?): String? {
+    private fun saveCover(context: Context, id: String, embedded: ByteArray?): String? {
+        if (embedded == null || embedded.isEmpty()) return null
         val dir = File(context.filesDir, "covers").apply { mkdirs() }
         val out = File(dir, "$id.img")
         return try {
-            when {
-                embedded != null && embedded.isNotEmpty() -> out.writeBytes(embedded)
-                imageUri != null -> context.contentResolver.openInputStream(imageUri)?.use { input ->
-                    out.outputStream().use { input.copyTo(it) }
-                } ?: return null
-                else -> return null
-            }
+            out.writeBytes(embedded)
             out.absolutePath
         } catch (e: Exception) {
             Log.w(TAG, "Cover save failed", e)
@@ -211,7 +294,15 @@ object Scanner {
         }
     }
 
-    private fun extractorDuration(context: Context, uri: Uri): Long {
+    private fun probeDuration(context: Context, uri: Uri): Long {
+        val mmr = MediaMetadataRetriever()
+        try {
+            mmr.setDataSource(context, uri)
+            mmr.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull()?.let { if (it > 0) return it }
+        } catch (_: Exception) {
+        } finally {
+            try { mmr.release() } catch (_: Exception) {}
+        }
         val ex = MediaExtractor()
         return try {
             ex.setDataSource(context, uri, null)

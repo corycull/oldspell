@@ -8,8 +8,16 @@ import kotlinx.coroutines.flow.asStateFlow
 class Settings(context: Context) {
     private val prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
 
-    private val _folders = MutableStateFlow(readSet("folders").sorted())
-    val folders: StateFlow<List<String>> = _folders.asStateFlow()
+    init {
+        // Folders picked with the old system picker no longer apply.
+        prefs.edit().remove("folders").apply()
+    }
+
+    /** Top-level folders whose audio counts as audiobooks. null = not chosen yet (use defaults). */
+    private val _included = MutableStateFlow(
+        if (prefs.getBoolean("includedChosen", false)) readSet("includedFolders") else null,
+    )
+    val includedFolders: StateFlow<Set<String>?> = _included.asStateFlow()
 
     private val _hidden = MutableStateFlow(readSet("hidden"))
     val hidden: StateFlow<Set<String>> = _hidden.asStateFlow()
@@ -25,16 +33,14 @@ class Settings(context: Context) {
 
     private fun readSet(key: String): Set<String> = prefs.getStringSet(key, null)?.toSet() ?: emptySet()
 
-    fun addFolder(uri: String) {
-        val next = (_folders.value + uri).distinct().sorted()
-        _folders.value = next
-        prefs.edit().putStringSet("folders", next.toSet()).apply()
+    fun setIncluded(keys: Set<String>) {
+        _included.value = keys
+        prefs.edit().putStringSet("includedFolders", keys).putBoolean("includedChosen", true).apply()
     }
 
-    fun removeFolder(uri: String) {
-        val next = _folders.value - uri
-        _folders.value = next
-        prefs.edit().putStringSet("folders", next.toSet()).apply()
+    fun toggleFolder(key: String) {
+        val cur = _included.value ?: emptySet()
+        setIncluded(if (key in cur) cur - key else cur + key)
     }
 
     fun hide(bookId: String) {

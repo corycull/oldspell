@@ -1,7 +1,5 @@
 package com.oldspell.app.ui
 
-import android.content.Intent
-import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -20,9 +18,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
@@ -100,10 +95,11 @@ fun MiniPlayer(book: Book, state: PlaybackState, conn: PlayerConnection, onOpen:
 // ---------------------------------------------------------------- Settings
 
 @Composable
-fun SettingsScreen(onAddFolder: () -> Unit) {
+fun SettingsScreen(hasAccess: Boolean, onRequestAccess: () -> Unit) {
     val app = OldspellApp.instance
     val context = LocalContext.current
-    val folders by app.settings.folders.collectAsStateWithLifecycle()
+    val folders by app.store.folders.collectAsStateWithLifecycle()
+    val included by app.settings.includedFolders.collectAsStateWithLifecycle()
     val hidden by app.settings.hidden.collectAsStateWithLifecycle()
     val skipBack by app.settings.skipBackSec.collectAsStateWithLifecycle()
     val skipFwd by app.settings.skipForwardSec.collectAsStateWithLifecycle()
@@ -123,49 +119,50 @@ fun SettingsScreen(onAddFolder: () -> Unit) {
             )
         }
         item { SectionHeader("Audiobook folders") }
-        items(folders, key = { it }) { f ->
-            Row(
-                Modifier.fillMaxWidth().padding(start = 20.dp, end = 4.dp, top = 4.dp, bottom = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Icon(Icons.Filled.Folder, null, tint = Palette.Accent)
-                Spacer(Modifier.width(14.dp))
-                Column(Modifier.weight(1f)) {
-                    Text(folderLabel(f), maxLines = 2, overflow = TextOverflow.Ellipsis)
-                    Text(
-                        "${books.count { it.folderUri == f }} books",
-                        style = MaterialTheme.typography.bodySmall, color = Palette.Muted,
-                    )
-                }
-                IconButton(onClick = {
-                    app.settings.removeFolder(f)
-                    app.store.removeFolder(f)
-                    try {
-                        context.contentResolver.releasePersistableUriPermission(
-                            Uri.parse(f), Intent.FLAG_GRANT_READ_URI_PERMISSION,
+        item {
+            Column(Modifier.padding(horizontal = 16.dp)) {
+                when {
+                    !hasAccess -> {
+                        Text(
+                            "Oldspell needs access to the audio files on your phone to find your books.",
+                            style = MaterialTheme.typography.bodyMedium, color = Palette.Muted,
+                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp),
                         )
-                    } catch (_: Exception) {
+                        Spacer(Modifier.height(8.dp))
+                        AccentButton("Allow access to audio", onRequestAccess)
                     }
-                }) { Icon(Icons.Filled.Close, "Remove folder", tint = Palette.Muted) }
+                    folders.isEmpty() -> Text(
+                        if (scanStatus != null) "Looking for audio…" else "No audio files found on this phone yet.",
+                        style = MaterialTheme.typography.bodyMedium, color = Palette.Muted,
+                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp),
+                    )
+                    else -> {
+                        Text(
+                            "Every folder on your phone that holds audio. Turn on the ones with audiobooks.",
+                            style = MaterialTheme.typography.bodySmall, color = Palette.Muted,
+                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp),
+                        )
+                        FolderChooser(folders, included ?: emptySet()) { key ->
+                            app.settings.toggleFolder(key)
+                            app.rescan()
+                        }
+                    }
+                }
             }
         }
-        item {
-            Row(
-                Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                PillButton(Icons.Filled.Add, "Add folder", primary = true, onClick = onAddFolder)
-                if (folders.isNotEmpty()) {
-                    PillButton(Icons.Filled.Refresh, if (scanStatus != null) "Scanning…" else "Rescan") {
+        if (hasAccess) {
+            item {
+                Row(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+                    PillButton(Icons.Filled.Refresh, if (scanStatus != null) "Scanning…" else "Look for new books") {
                         app.rescan()
                     }
                 }
-            }
-            scanStatus?.let {
-                Text(
-                    it, style = MaterialTheme.typography.bodySmall, color = Palette.Muted,
-                    modifier = Modifier.padding(horizontal = 20.dp),
-                )
+                scanStatus?.let {
+                    Text(
+                        it, style = MaterialTheme.typography.bodySmall, color = Palette.Muted,
+                        modifier = Modifier.padding(horizontal = 20.dp),
+                    )
+                }
             }
         }
 
@@ -198,7 +195,7 @@ fun SettingsScreen(onAddFolder: () -> Unit) {
                 "• Every .m4b file is a book, with its built-in chapters.\n" +
                     "• Every folder of mp3 / m4a / ogg / flac files is a book; each file is a chapter.\n" +
                     "• Folders split into “CD 1”, “Disc 2”… are joined into one book.\n" +
-                    "• Cover art comes from the file, or a cover.jpg / folder.jpg next to it.",
+                    "• Cover art comes from the picture embedded in the audio file.",
                 style = MaterialTheme.typography.bodyMedium, color = Palette.Muted,
                 modifier = Modifier.padding(horizontal = 20.dp),
             )
@@ -234,15 +231,6 @@ fun SettingsScreen(onAddFolder: () -> Unit) {
             )
         }
     }
-}
-
-private fun folderLabel(uri: String): String {
-    val decoded = Uri.decode(uri)
-    val path = decoded.substringAfterLast("/tree/").substringBefore("/document/")
-    val volume = path.substringBefore(':')
-    val rest = path.substringAfter(':', "")
-    val vol = if (volume == "primary") "Internal storage" else volume
-    return if (rest.isEmpty()) vol else "$vol / $rest"
 }
 
 @Composable
