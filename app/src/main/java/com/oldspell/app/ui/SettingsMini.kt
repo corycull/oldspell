@@ -46,6 +46,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.oldspell.app.OldspellApp
 import com.oldspell.app.data.Book
+import com.oldspell.app.data.DownloadSource
 import com.oldspell.app.playback.PlaybackState
 import com.oldspell.app.playback.PlayerConnection
 
@@ -237,6 +238,7 @@ fun SettingsScreen(onAddFolder: () -> Unit) {
 }
 
 private fun folderLabel(uri: String): String {
+    if (uri == DownloadSource.KEY) return "Internal storage / Download"
     val decoded = Uri.decode(uri)
     val path = decoded.substringAfterLast("/tree/").substringBefore("/document/")
     val volume = path.substringBefore(':')

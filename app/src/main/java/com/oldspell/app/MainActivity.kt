@@ -1,6 +1,8 @@
 package com.oldspell.app
 
 import android.Manifest
+import android.app.Activity
+import android.net.Uri
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
@@ -42,7 +44,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.oldspell.app.data.DownloadSource
+import com.oldspell.app.ui.AddFolderDialog
 import com.oldspell.app.data.Book
 import com.oldspell.app.playback.PlayerConnection
 import com.oldspell.app.ui.OldspellTheme
@@ -113,7 +118,44 @@ private fun AppRoot(conn: PlayerConnection, openRequests: StateFlow<Int>) {
             app.rescan()
         }
     }
-    val addFolder: () -> Unit = { pickFolder.launch(null) }
+    var showAddDialog by remember { mutableStateOf(false) }
+    val folders by app.settings.folders.collectAsStateWithLifecycle()
+    val addFolder: () -> Unit = { showAddDialog = true }
+
+    // The Download folder is read through audio access, because the picker refuses it.
+    var downloadPending by rememberSaveable { mutableStateOf(false) }
+    var askedForAudio by rememberSaveable { mutableStateOf(false) }
+    val addDownloadNow: () -> Unit = {
+        downloadPending = false
+        app.settings.addFolder(DownloadSource.KEY)
+        app.rescan()
+    }
+    val audioPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        askedForAudio = true
+        if (granted) addDownloadNow()
+    }
+    val addDownload: () -> Unit = {
+        val perm = DownloadSource.permission()
+        val activity = context as? Activity
+        when {
+            DownloadSource.hasPermission(context) -> addDownloadNow()
+            askedForAudio && activity != null && !activity.shouldShowRequestPermissionRationale(perm) -> {
+                // After "Don't allow", Android stops asking: send the user to the app's settings page.
+                downloadPending = true
+                context.startActivity(
+                    Intent(
+                        android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                        Uri.fromParts("package", context.packageName, null),
+                    ),
+                )
+            }
+            else -> audioPermission.launch(perm)
+        }
+    }
+    LifecycleResumeEffect(Unit) {
+        if (downloadPending && DownloadSource.hasPermission(context)) addDownloadNow()
+        onPauseOrDispose {}
+    }
 
     // Media notifications work without this, but some phones hide them unless it's granted.
     val notifPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {}
@@ -185,4 +227,13 @@ private fun AppRoot(conn: PlayerConnection, openRequests: StateFlow<Int>) {
     }
 
     BackHandler(enabled = playerOpen) { playerOpen = false }
+
+    if (showAddDialog) {
+        AddFolderDialog(
+            downloadAdded = DownloadSource.KEY in folders,
+            onPickFolder = { showAddDialog = false; pickFolder.launch(null) },
+            onAddDownload = { showAddDialog = false; addDownload() },
+            onDismiss = { showAddDialog = false },
+        )
+    }
 }

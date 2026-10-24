@@ -112,7 +112,15 @@ class LibraryStore(private val context: Context) {
                 val found = ArrayList<Book>()
                 for (folder in folders) {
                     try {
-                        found += Scanner.scan(context, Uri.parse(folder), existing) { _scanStatus.value = it }
+                        found += if (folder == DownloadSource.KEY) {
+                            if (DownloadSource.hasPermission(context)) {
+                                DownloadSource.scan(context, existing) { _scanStatus.value = it }
+                            } else {
+                                existing.values.filter { it.folderUri == folder } // access was revoked
+                            }
+                        } else {
+                            Scanner.scan(context, Uri.parse(folder), existing) { _scanStatus.value = it }
+                        }
                     } catch (e: Exception) {
                         // Folder unreadable (moved, permission revoked): keep what we already had.
                         Log.w(TAG, "Scan failed for $folder", e)

@@ -14,6 +14,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.semantics.Role
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
@@ -234,6 +238,65 @@ fun EmptyLibrary(scanStatus: String?, onAddFolder: () -> Unit, modifier: Modifie
                 .padding(horizontal = 24.dp, vertical = 12.dp),
         ) {
             Text("Add audiobook folder", color = Palette.OnAccent, fontWeight = FontWeight.Bold)
+        }
+    }
+}
+
+/**
+ * Opens before the system folder picker. Explains what Android won't let apps pick, and offers the
+ * Download folder separately (read through audio access, since the picker refuses it).
+ */
+@Composable
+fun AddFolderDialog(
+    downloadAdded: Boolean,
+    onPickFolder: () -> Unit,
+    onAddDownload: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = Palette.SurfaceHi,
+        title = { Text("Add audiobooks") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (!downloadAdded) {
+                    DialogOption(
+                        title = "Download folder",
+                        detail = "Books you saved or downloaded to your phone. Asks once for access to audio files.",
+                        onClick = onAddDownload,
+                    )
+                }
+                DialogOption(
+                    title = "Choose a folder",
+                    detail = "Android doesn't let apps pick the Download folder itself or your whole storage. " +
+                        "Pick a folder inside them instead, or use the picker's menu › New folder to make one " +
+                        "called Audiobooks.",
+                    onClick = onPickFolder,
+                )
+            }
+        },
+        confirmButton = {},
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel", color = Palette.Muted) } },
+    )
+}
+
+@Composable
+private fun DialogOption(title: String, detail: String, onClick: () -> Unit) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(Palette.Surface)
+            .clickable(role = Role.Button, onClick = onClick)
+            .padding(14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(Icons.Filled.Folder, null, tint = Palette.Accent)
+        Spacer(Modifier.width(14.dp))
+        Column(Modifier.weight(1f)) {
+            Text(title, fontWeight = FontWeight.SemiBold, color = Palette.Text)
+            Spacer(Modifier.height(2.dp))
+            Text(detail, style = MaterialTheme.typography.bodySmall, color = Palette.Muted)
         }
     }
 }

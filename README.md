@@ -28,10 +28,14 @@ dark, cover-art-first design and the controls you'd expect from a dedicated audi
 
 ## First run
 
-1. Tap **Add audiobook folder** and choose the folder that holds your books
-   (e.g. `Audiobooks` in internal storage or on an SD card). You can add more than one folder
-   in Settings.
-2. The library fills in as files are read. Tap any book to start listening.
+1. Tap **Add audiobook folder**.
+2. Choose **Download folder** to use books saved in Download (Android asks once for audio access),
+   or **Choose a folder** to pick any other folder, e.g. `Audiobooks` in internal storage or on an
+   SD card. Add as many folders as you like from Settings.
+3. The library fills in as files are read. Tap any book to start listening.
+
+Android's folder picker won't hand out the Download folder itself or the top of your storage;
+pick a folder inside them, or use the Download folder option.
 
 Requires Android 8.0 or newer.
 
