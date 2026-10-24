@@ -59,8 +59,7 @@ fun HomeScreen(
     scanStatus: String?,
     onPlay: (Book) -> Unit,
     onToggle: (Book) -> Unit,
-    hasAccess: Boolean,
-    onRequestAccess: () -> Unit,
+    onAddFolder: () -> Unit,
 ) {
     fun pos(b: Book) = if (state.bookId == b.id) state.positionMs else b.positionMs
     val continueListening = books
@@ -82,7 +81,7 @@ fun HomeScreen(
             }
         }
         if (books.isEmpty()) {
-            item { EmptyLibrary(scanStatus, hasAccess, onRequestAccess) }
+            item { EmptyLibrary(scanStatus, onAddFolder) }
             return@LazyColumn
         }
         if (hero != null) {
@@ -178,8 +177,7 @@ fun LibraryScreen(
     scanStatus: String?,
     onPlay: (Book) -> Unit,
     onToggle: (Book) -> Unit,
-    hasAccess: Boolean,
-    onRequestAccess: () -> Unit,
+    onAddFolder: () -> Unit,
 ) {
     var filter by rememberSaveable { mutableStateOf(Filter.All) }
     var sort by rememberSaveable { mutableStateOf(Sort.Recent) }
@@ -273,7 +271,7 @@ fun LibraryScreen(
             )
         }
         if (books.isEmpty()) {
-            EmptyLibrary(scanStatus, hasAccess, onRequestAccess)
+            EmptyLibrary(scanStatus, onAddFolder)
             return@Column
         }
         Text(

@@ -5,11 +5,10 @@ dark, cover-art-first design and the controls you'd expect from a dedicated audi
 
 ## Features
 
-- **Library from your own files.** With audio access allowed, the app finds audio anywhere on
-  the phone (including Download and SD cards); you switch on the folders that hold audiobooks.
-  Every `.m4b` becomes a book (with its built-in chapters), every folder of
-  `mp3 / m4a / ogg / flac / opus` files becomes a book with one chapter per file, and
-  `CD 1 / CD 2 / Disc 3` subfolders are merged into one book. Cover art comes from the file tags.
+- **Library from your own files.** Pick a folder once; every `.m4b` becomes a book (with its
+  built-in chapters), every folder of `mp3 / m4a / ogg / flac / opus` files becomes a book with
+  one chapter per file, and `CD 1 / CD 2 / Disc 3` subfolders are merged into one book.
+  Cover art comes from the file tags or a `cover.jpg` / `folder.jpg`.
 - **Home** with a big *Continue listening* card plus shelves: Continue listening, Recently added,
   Up next and Finished.
 - **Library** with All / Not started / In progress / Finished filters, search, and sorting by
@@ -29,10 +28,10 @@ dark, cover-art-first design and the controls you'd expect from a dedicated audi
 
 ## First run
 
-1. Tap **Allow access to audio** and allow it when Android asks.
-2. Switch on the folders that hold your audiobooks (folders named like `Audiobooks`, `Download`
-   and any with `.m4b` files start switched on). Change this any time in Settings.
-3. The library fills in as files are read. Tap any book to start listening.
+1. Tap **Add audiobook folder** and choose the folder that holds your books
+   (e.g. `Audiobooks` in internal storage or on an SD card). You can add more than one folder
+   in Settings.
+2. The library fills in as files are read. Tap any book to start listening.
 
 Requires Android 8.0 or newer.
 
@@ -40,7 +39,7 @@ Requires Android 8.0 or newer.
 
 ```
 app/src/main/java/com/oldspell/app/
-  data/       Book model, JSON library store, audio library scanner, MP4 chapter reader
+  data/       Book model, JSON library store, folder scanner, MP4 chapter reader
   playback/   Media3 playback service, controller connection, sleep timer, shake detector
   ui/         Compose screens: Home, Library, Player, Settings, mini player
 ```

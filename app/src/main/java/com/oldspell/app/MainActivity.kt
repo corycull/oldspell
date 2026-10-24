@@ -1,8 +1,6 @@
 package com.oldspell.app
 
 import android.Manifest
-import android.app.Activity
-import android.net.Uri
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
@@ -44,9 +42,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
-import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.oldspell.app.data.Scanner
 import com.oldspell.app.data.Book
 import com.oldspell.app.playback.PlayerConnection
 import com.oldspell.app.ui.OldspellTheme
@@ -107,36 +103,17 @@ private fun AppRoot(conn: PlayerConnection, openRequests: StateFlow<Int>) {
     var playerOpen by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(openReq) { if (openReq > 0) playerOpen = true }
 
-    // Audio access: lets the app find audiobooks anywhere on the phone (no folder picker needed).
-    var hasAccess by remember { mutableStateOf(Scanner.hasPermission(context)) }
-    var askedForAccess by rememberSaveable { mutableStateOf(false) }
-    val accessPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        askedForAccess = true
-        hasAccess = granted
-        if (granted) app.rescan()
-    }
-    val requestAccess: () -> Unit = {
-        val perm = Scanner.permission()
-        val activity = context as? Activity
-        if (askedForAccess && activity != null && !activity.shouldShowRequestPermissionRationale(perm)) {
-            // After "Don't allow", Android stops showing the prompt: open the app's settings page instead.
-            context.startActivity(
-                Intent(
-                    android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                    Uri.fromParts("package", context.packageName, null),
-                ),
-            )
-        } else {
-            accessPermission.launch(perm)
+    val pickFolder = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+        if (uri != null) {
+            try {
+                context.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            } catch (_: SecurityException) {
+            }
+            app.settings.addFolder(uri.toString())
+            app.rescan()
         }
     }
-    // Re-check on return, e.g. from the system settings page.
-    LifecycleResumeEffect(Unit) {
-        val now = Scanner.hasPermission(context)
-        if (now && !hasAccess) app.rescan()
-        hasAccess = now
-        onPauseOrDispose {}
-    }
+    val addFolder: () -> Unit = { pickFolder.launch(null) }
 
     // Media notifications work without this, but some phones hide them unless it's granted.
     val notifPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {}
@@ -191,9 +168,9 @@ private fun AppRoot(conn: PlayerConnection, openRequests: StateFlow<Int>) {
         ) { padding ->
             Box(Modifier.padding(padding)) {
                 when (tab) {
-                    0 -> HomeScreen(books, ps, scanStatus, playAndOpen, toggle, hasAccess, requestAccess)
-                    1 -> LibraryScreen(books, ps, scanStatus, playAndOpen, toggle, hasAccess, requestAccess)
-                    else -> SettingsScreen(hasAccess, requestAccess)
+                    0 -> HomeScreen(books, ps, scanStatus, playAndOpen, toggle, addFolder)
+                    1 -> LibraryScreen(books, ps, scanStatus, playAndOpen, toggle, addFolder)
+                    else -> SettingsScreen(addFolder)
                 }
             }
         }

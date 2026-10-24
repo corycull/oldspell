@@ -17,7 +17,7 @@ class OldspellApp : Application() {
         store = LibraryStore(this)
     }
 
-    fun rescan() = store.scan(settings)
+    fun rescan() = store.scan(settings.folders.value, settings.hidden.value)
 
     companion object {
         lateinit var instance: OldspellApp

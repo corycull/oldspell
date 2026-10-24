@@ -14,13 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.selection.toggleable
-import androidx.compose.material.icons.filled.Folder
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
-import androidx.compose.ui.semantics.Role
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.oldspell.app.data.AudioFolder
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
@@ -217,117 +210,30 @@ fun SectionHeader(text: String, modifier: Modifier = Modifier) {
     )
 }
 
-/**
- * Shown when there are no books yet: asks for audio access, lets the user tick folders,
- * or explains that no audio was found.
- */
 @Composable
-fun EmptyLibrary(
-    scanStatus: String?,
-    hasAccess: Boolean,
-    onRequestAccess: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val app = OldspellApp.instance
-    val folders by app.store.folders.collectAsStateWithLifecycle()
-    val included by app.settings.includedFolders.collectAsStateWithLifecycle()
+fun EmptyLibrary(scanStatus: String?, onAddFolder: () -> Unit, modifier: Modifier = Modifier) {
     Column(
-        modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 40.dp),
+        modifier.fillMaxWidth().padding(horizontal = 32.dp, vertical = 48.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        when {
-            !hasAccess -> {
-                Text("Find your audiobooks", style = MaterialTheme.typography.titleLarge)
-                Text(
-                    "Allow Oldspell to see the audio files on your phone. It looks for audiobooks " +
-                        "anywhere, including Download, and never changes your files.",
-                    color = Palette.Muted, textAlign = TextAlign.Center, style = MaterialTheme.typography.bodyMedium,
-                )
-                Spacer(Modifier.height(4.dp))
-                AccentButton("Allow access to audio", onRequestAccess)
-            }
-            scanStatus != null && folders.isEmpty() -> {
-                Text("Looking for audiobooks…", style = MaterialTheme.typography.titleLarge)
-                Text(scanStatus, color = Palette.Muted, textAlign = TextAlign.Center, style = MaterialTheme.typography.bodyMedium)
-            }
-            folders.isEmpty() -> {
-                Text("No audio found yet", style = MaterialTheme.typography.titleLarge)
-                Text(
-                    "Copy audiobooks onto your phone, for example into a folder called Audiobooks or into " +
-                        "Download. Each .m4b file, or each folder of mp3s, becomes a book.",
-                    color = Palette.Muted, textAlign = TextAlign.Center, style = MaterialTheme.typography.bodyMedium,
-                )
-                Spacer(Modifier.height(4.dp))
-                AccentButton("Look again") { app.rescan() }
-            }
-            else -> {
-                Text("Which folders hold audiobooks?", style = MaterialTheme.typography.titleLarge, textAlign = TextAlign.Center)
-                Text(
-                    "Turn on the folders with your books. Music in other folders stays out of your library. " +
-                        "You can change this later in Settings.",
-                    color = Palette.Muted, textAlign = TextAlign.Center, style = MaterialTheme.typography.bodyMedium,
-                )
-                FolderChooser(folders, included ?: emptySet()) { key ->
-                    app.settings.toggleFolder(key)
-                    app.rescan()
-                }
-                scanStatus?.let {
-                    Text(it, color = Palette.Muted, style = MaterialTheme.typography.bodySmall)
-                }
-            }
+        Text("Your library is empty", style = MaterialTheme.typography.titleLarge)
+        Text(
+            scanStatus ?: "Choose the folder on your phone where you keep audiobooks. " +
+                "Each .m4b file, or each folder of mp3s, becomes a book.",
+            color = Palette.Muted,
+            textAlign = TextAlign.Center,
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        Spacer(Modifier.height(4.dp))
+        Box(
+            Modifier
+                .clip(RoundedCornerShape(24.dp))
+                .background(Palette.Accent)
+                .clickable(onClick = onAddFolder)
+                .padding(horizontal = 24.dp, vertical = 12.dp),
+        ) {
+            Text("Add audiobook folder", color = Palette.OnAccent, fontWeight = FontWeight.Bold)
         }
-    }
-}
-
-/** One row per top-level folder with audio, each with an on/off switch. */
-@Composable
-fun FolderChooser(folders: List<AudioFolder>, included: Set<String>, onToggle: (String) -> Unit) {
-    Column(Modifier.fillMaxWidth()) {
-        folders.forEach { f ->
-            val on = f.key in included
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(10.dp))
-                    .toggleable(value = on, role = Role.Switch, onValueChange = { onToggle(f.key) })
-                    .padding(horizontal = 4.dp, vertical = 10.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Icon(Icons.Filled.Folder, null, tint = if (on) Palette.Accent else Palette.Faint)
-                Spacer(Modifier.width(14.dp))
-                Column(Modifier.weight(1f)) {
-                    Text(f.label, maxLines = 2, overflow = TextOverflow.Ellipsis, color = Palette.Text)
-                    Text(
-                        "${f.bookCount} ${if (f.bookCount == 1) "book" else "books"}",
-                        style = MaterialTheme.typography.bodySmall, color = Palette.Muted,
-                    )
-                }
-                Switch(
-                    checked = on,
-                    onCheckedChange = null,
-                    colors = SwitchDefaults.colors(
-                        checkedThumbColor = Palette.OnAccent,
-                        checkedTrackColor = Palette.Accent,
-                        uncheckedThumbColor = Palette.Muted,
-                        uncheckedTrackColor = Palette.SurfaceHi,
-                        uncheckedBorderColor = Palette.Line,
-                    ),
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun AccentButton(label: String, onClick: () -> Unit) {
-    Box(
-        Modifier
-            .clip(RoundedCornerShape(24.dp))
-            .background(Palette.Accent)
-            .clickable(role = Role.Button, onClick = onClick)
-            .padding(horizontal = 24.dp, vertical = 12.dp),
-    ) {
-        Text(label, color = Palette.OnAccent, fontWeight = FontWeight.Bold)
     }
 }
